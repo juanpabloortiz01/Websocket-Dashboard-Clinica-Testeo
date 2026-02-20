@@ -8,10 +8,10 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
-// Configuración de Socket.io con CORS
+// ✅ 1. Configuración de Socket.io (Abierto para evitar bloqueos de CORS iniciales)
 const io = socketIo(server, {
   cors: {
-    origin: process.env.DASHBOARD_URL,
+    origin: "*", 
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -26,33 +26,25 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Middlewares
+// ✅ 2. Middlewares (CORS abierto para desarrollo)
 app.use(cors({
-  origin: process.env.DASHBOARD_URL,
+  origin: "*",
   credentials: true
 }));
 app.use(express.json());
+
+// ✅ 3. RUTA DE BIENVENIDA (Para que no de error al entrar a la URL)
+app.get('/', (req, res) => {
+  res.send('<h1>🚀 Servidor Quantum Operativo</h1><p>Conectado a DB y WebSockets listos.</p>');
+});
 
 // ============================================
 // API REST - ENDPOINTS
 // ============================================
 
-// 🔹 ENDPOINT 1: Obtener todas las citas
 app.get('/api/appointments', async (req, res) => {
   try {
-    // ⚠️ PERSONALIZA ESTA QUERY SEGÚN TU TABLA
-    const result = await pool.query(`
-      SELECT 
-        pk_id,
-        nombre_cliente,
-        numero_cliente,
-        fecha_hora,
-        precio_total,
-        pedido
-      FROM 'Odontologia - Citas Agendadas'
-      ORDER BY fecha_hora
-    `);
-    
+    const result = await pool.query('SELECT pk_id, nombre_cliente, numero_cliente, fecha_hora, precio_total, pedido FROM appointments ORDER BY fecha_hora');
     res.json(result.rows);
   } catch (err) {
     console.error('Error al obtener citas:', err);
@@ -60,38 +52,18 @@ app.get('/api/appointments', async (req, res) => {
   }
 });
 
-// 🔹 ENDPOINT 2: Obtener citas de hoy
-app.get('/api/appointments/today', async (req, res) => {
-  try {
-    // ⚠️ PERSONALIZA ESTA QUERY SEGÚN TU TABLA
-    const result = await pool.query(`
-      SELECT * FROM 'Odontologia - Citas Agendadas'
-      WHERE fecha_hora = CURRENT_DATE
-      ORDER BY fecha_hora
-    `);
-    
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error al obtener citas de hoy:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 🔹 ENDPOINT 3: Notificar cambio manualmente (para n8n)
-app.post('/api/notify-change', async (req, res) => {
+// 🔹 ENDPOINT PARA n8n (Ajustado a tu ruta original)
+app.post('/api/notify-change', (req, res) => {
   try {
     const { type, data } = req.body;
-    
-    // Emitir evento a todos los clientes conectados
     io.emit('appointment_update', {
-      type: type, // 'created', 'updated', 'deleted'
+      type: type,
       data: data,
       timestamp: new Date()
     });
-    
+    console.log('📢 n8n notificó un cambio:', type);
     res.json({ success: true, message: 'Notificación enviada' });
   } catch (err) {
-    console.error('Error al notificar cambio:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -100,72 +72,35 @@ app.post('/api/notify-change', async (req, res) => {
 // WEBSOCKET - CONEXIONES
 // ============================================
 
-let connectedClients = 0;
-
 io.on('connection', (socket) => {
-  connectedClients++;
-  console.log(`✅ Cliente conectado. Total: ${connectedClients}`);
+  console.log(`✅ Nuevo cliente conectado: ${socket.id}`);
   
-  // Enviar confirmación de conexión
   socket.emit('connected', { 
-    message: 'Conectado al servidor WebSocket',
+    message: 'Conectado al servidor WebSocket de Quantum',
     timestamp: new Date()
   });
 
   socket.on('disconnect', () => {
-    connectedClients--;
-    console.log(`❌ Cliente desconectado. Total: ${connectedClients}`);
-  });
-
-  // Evento personalizado: solicitar datos frescos
-  socket.on('request_appointments', async () => {
-    try {
-      const result = await pool.query(`
-        SELECT * FROM appointments 
-        ORDER BY appointment_date, appointment_time
-      `);
-      
-      socket.emit('appointments_data', result.rows);
-    } catch (err) {
-      console.error('Error al obtener citas:', err);
-      socket.emit('error', { message: err.message });
-    }
+    console.log('❌ Cliente desconectado');
   });
 });
 
 // ============================================
-// FUNCIÓN PARA NOTIFICAR CAMBIOS DESDE N8N
+// INICIAR SERVIDOR (AJUSTADO PARA EASYPANEL)
 // ============================================
 
-function notifyAppointmentChange(type, data) {
-  io.emit('appointment_update', {
-    type: type,
-    data: data,
-    timestamp: new Date()
-  });
-  console.log(`📢 Notificación enviada: ${type}`, data);
-}
+const PORT = process.env.PORT || 3000; // Usamos 3000 que es el estándar de Easypanel
 
-// Exportar para usar en otros archivos si es necesario
-module.exports = { notifyAppointmentChange, io };
-
-// ============================================
-// INICIAR SERVIDOR
-// ============================================
-
-const PORT = process.env.PORT || 3001;
-
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ╔══════════════════════════════════════════╗
-  ║   🚀 Servidor WebSocket Iniciado        ║
-  ║   📡 Puerto: ${PORT}                        ║
-  ║   🔗 http://localhost:${PORT}              ║
+  ║    🚀 SERVIDOR QUANTUM INICIADO          ║
+  ║    📡 PUERTO: ${PORT}                      ║
+  ║    🌐 HOST: 0.0.0.0                      ║
   ╚══════════════════════════════════════════╝
   `);
 });
 
-// Manejo de errores de PostgreSQL
 pool.on('error', (err) => {
   console.error('❌ Error inesperado en PostgreSQL:', err);
 });
