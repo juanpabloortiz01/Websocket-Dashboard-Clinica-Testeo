@@ -24,6 +24,9 @@ const pool = new Pool({
   database: 'postgres',
   password: 'juanpiz01',
   port: 5432,
+  ssl: {
+    rejectUnauthorized: false // 👈 Esto es vital para conectar desde fuera a Easypanel
+  }
 });
 
 // ✅ 2. Middlewares (CORS abierto para desarrollo)
@@ -42,7 +45,7 @@ app.get('/', (req, res) => {
 // API REST - ENDPOINTS
 // ============================================
 
-app.get('/api/appointments', async (req, res) => {
+app.get('/api/Odontologia - Citas Agendadas', async (req, res) => {
   try {
     const result = await pool.query('SELECT pk_id, nombre_cliente, numero_cliente, fecha_hora, precio_total, pedido FROM appointments ORDER BY fecha_hora');
     res.json(result.rows);
