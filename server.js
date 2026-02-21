@@ -24,9 +24,6 @@ const pool = new Pool({
   database: 'postgres',
   password: 'juanpiz01',
   port: 5432,
-  ssl: {
-    rejectUnauthorized: false // 👈 Esto es vital para conectar desde fuera a Easypanel
-  }
 });
 
 // ✅ 2. Middlewares (CORS abierto para desarrollo)
