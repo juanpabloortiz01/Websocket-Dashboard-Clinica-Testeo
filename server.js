@@ -45,9 +45,9 @@ app.get('/', (req, res) => {
 // API REST - ENDPOINTS
 // ============================================
 
-app.get('/api/Odontologia - Citas Agendadas', async (req, res) => {
+app.get('/api/appointments', async (req, res) => {
   try {
-    const result = await pool.query('SELECT pk_id, nombre_cliente, numero_cliente, fecha_hora, precio_total, pedido FROM appointments ORDER BY fecha_hora');
+    const result = await pool.query('SELECT pk_id, nombre_cliente, numero_cliente, fecha_hora, precio_total, pedido FROM "Odontologia - Citas Agendadas" ORDER BY fecha_hora');
     res.json(result.rows);
   } catch (err) {
     console.error('Error al obtener citas:', err);
