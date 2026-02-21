@@ -19,7 +19,7 @@ const io = socketIo(server, {
 
 // Configuración de PostgreSQL
 const pool = new Pool({
-  user: 'postgres',
+  user: 'juan',
   host: '178.18.255.107',
   database: 'postgres',
   password: 'juanpiz01',
