@@ -19,11 +19,11 @@ const io = socketIo(server, {
 
 // Configuración de PostgreSQL
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  user: 'postgres',
+  host: '178.18.255.107',
+  database: 'postgres',
+  password: 'juanpiz01',
+  port: 5432,
 });
 
 // ✅ 2. Middlewares (CORS abierto para desarrollo)
